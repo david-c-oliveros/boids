@@ -8,5 +8,9 @@ class Boid : public Entity
         Boid(olc::vf2d vPos, olc::vf2d vVel);
         ~Boid();
 
-        void DrawSelf(olc::TileTransformedView* tv) override;
+        void SetPosX(float fPosX);
+        void SetPosY(float fPosX);
+        void ZeroVel();
+
+        void DrawSelf(olc::PixelGameEngine* pge, olc::TileTransformedView* tv) override;
 };

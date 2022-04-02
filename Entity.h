@@ -16,5 +16,5 @@ class Entity : public Object
 
         void SetVel(olc::vf2d vVel);
 
-        virtual void DrawSelf(olc::TileTransformedView* tv) = 0;
+        virtual void DrawSelf(olc::PixelGameEngine* pge, olc::TileTransformedView* tv) = 0;
 };
