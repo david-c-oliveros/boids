@@ -34,7 +34,7 @@ class Boids : public olc::PixelGameEngine
             {
                 float rX = procgen::normRand();
                 float rY = procgen::normRand();
-                vBoids.push_back(Boid(vCenterScreen, { rX, rY }));
+                vBoids.push_back(Boid({ 0.0f, 0.0f }, { rX, rY }));
             }
 
             return true;
@@ -77,12 +77,9 @@ class Boids : public olc::PixelGameEngine
                     else
                     {
                         vBoids[i].bPerching = false;
+                        vBoids[i].cPerchTimer.Reset();
                     }
                 }
-
-                /**************************************/
-                /*        Make map bounds wrap        */
-                /**************************************/
 
                 if (!bBounds)
                     WrapMap(i);
@@ -165,6 +162,7 @@ class Boids : public olc::PixelGameEngine
 
         olc::vf2d BoundPos(int iCurBoidIndex)
         {
+            float fGroundLevel = vBottomRight.y;
             float fXmin = 0.0f;
             float fXmax = vBottomRight.x;
             float fYmin = 0.0f;
@@ -172,6 +170,13 @@ class Boids : public olc::PixelGameEngine
             olc::vf2d vCurPos = vBoids[iCurBoidIndex].GetPos();
             olc::vf2d vVec = { 0.0f, 0.0f };
             float fScalar = 0.4f;
+
+            if (vCurPos.y > fGroundLevel)
+            {
+                vBoids[iCurBoidIndex].SetPosY(fGroundLevel - 0.3f);
+                vBoids[iCurBoidIndex].bPerching = true;
+                vBoids[iCurBoidIndex].cPerchTimer.Start();
+            }
 
             if (vCurPos.x < fXmin)
                 vVec.x = fScalar;
