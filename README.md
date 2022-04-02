@@ -6,4 +6,5 @@ It is written in C++ using the olcPixelGameEngine by Javidx9.
 
 
 ## Technology used
+- C++
 - olcPixelGameEngine by Javidx9
