@@ -19,8 +19,9 @@ class Boids : public olc::PixelGameEngine
         std::vector<Boid> vBoids;
         olc::vf2d vCenterScreen;
         olc::vi2d vBottomRight;
-        float fScalar = 0.3;
+        float fScalar = 0.7;
         float fMinDis = 1.0;
+        bool bBounds = true;
 
     public:
         bool OnUserCreate() override
@@ -63,42 +64,39 @@ class Boids : public olc::PixelGameEngine
             std::cout << vBoids[0].GetPos() << std::endl;
             for (int i = 0; i < vBoids.size(); i++)
             {
-                olc::vf2d vCurPos = vBoids[i].GetPos();
+                /***********************************/
+                /*        Check if perching        */
+                /***********************************/
+                if (vBoids[i].bPerching)
+                {
+                    if (!vBoids[i].cPerchTimer.Check())
+                    {
+                        vBoids[i].cPerchTimer.Update();
+                        continue;
+                    }
+                    else
+                    {
+                        vBoids[i].bPerching = false;
+                    }
+                }
 
-                /**********************/
-                /*        Tile        */
-                /**********************/
-//                if (abs(vCurPos.x) > vBottomRight.x - 1)
-//                    vBoids[i].SetPosX(vBottomRight.x - 1.1);
-//                if (abs(vCurPos.y) > vBottomRight.y - 1)
-//                    vBoids[i].SetPosY(vBottomRight.y - 1.1);
+                /**************************************/
+                /*        Make map bounds wrap        */
+                /**************************************/
 
-                if (vCurPos.x < -0.2f)
-                    vBoids[i].SetPosX(vBottomRight.x + 0.2f);
-                else if (vCurPos.x > vBottomRight.x + 0.2f)
-                    vBoids[i].SetPosX(-0.2f);
-
-                if (vCurPos.y < -0.2f)
-                    vBoids[i].SetPosY(vBottomRight.x + 0.2f);
-                else if (vCurPos.y > vBottomRight.y + 0.2f)
-                    vBoids[i].SetPosY(-0.2f);
+                if (!bBounds)
+                    WrapMap(i);
 
                 v1 = Rule1(i);
                 v2 = Rule2(i);
                 v3 = Rule3(i);
-                v4 = StayInBounds(i);
+                v4 = BoundPos(i);
                 v5 = StrongWind();
                 v6 = TendToPlace(i, vCenterScreen);
 
-//                if (v1.mag2() > 0.0f)
-//                    std::cout << "v1: " << v1.mag2() << std::endl;
-//                if (v2.mag2() > 9.0f)
-//                    std::cout << "v2: " << v2.mag2() << std::endl;
-//                if (v3.mag2() > 9.0f)
-//                    std::cout << "v3: " << v3.mag2() << std::endl;
-
-                vBoids[i].SetVel(fScalar * (vBoids[i].GetVel() + v1 + v2 + v3 + v4 + v5));
-                vBoids[i].SetPos(vBoids[i].GetPos() + vBoids[i].GetVel());
+                vBoids[i].SetVel(vBoids[i].GetVel() + v1 + v2 + v3 + v4);
+                LimitVel(i);
+                vBoids[i].SetPos(vBoids[i].GetPos() + 0.1f * vBoids[i].GetVel());
             }
         }
 
@@ -118,7 +116,7 @@ class Boids : public olc::PixelGameEngine
 
             vCenterMass /= (vBoids.size() - 1);
 
-            return (vCenterMass - vBoids[iCurBoidIndex].GetPos()) / 20;
+            return (vCenterMass - vBoids[iCurBoidIndex].GetPos()) / 40;
         }
 
 
@@ -149,21 +147,7 @@ class Boids : public olc::PixelGameEngine
 
             vPerceivedVel /= (vBoids.size() - 1);
 
-            return (vPerceivedVel - vBoids[iCurBoidIndex].GetVel()) / 8;
-        }
-
-
-        olc::vf2d StayInBounds(int iCurBoidIndex)
-        {
-            olc::vf2d vBoundsVec = { 0.0f, 0.0f };
-            olc::vf2d vCurPos = vBoids[iCurBoidIndex].GetVel();
-
-            if (vBottomRight.x - vCurPos.x < 2.0f)
-                vBoundsVec.x = 0.5f * (vBottomRight.x - vCurPos.x);
-            if (vBottomRight.y - vCurPos.y < 2.0f)
-                vBoundsVec.y = vBottomRight.y - vCurPos.y;
-
-            return vCurPos;
+            return (vPerceivedVel - vBoids[iCurBoidIndex].GetVel()) / 16;
         }
 
 
@@ -175,15 +159,64 @@ class Boids : public olc::PixelGameEngine
 
         olc::vf2d TendToPlace(int iCurBoidIndex, olc::vf2d vPlace = { 1.0f, 1.0f })
         {
-            return (vPlace - vBoids[iCurBoidIndex].GetPos()) / 100;
+            return (vPlace - vBoids[iCurBoidIndex].GetPos()) / 80;
+        }
+
+
+        olc::vf2d BoundPos(int iCurBoidIndex)
+        {
+            float fXmin = 0.0f;
+            float fXmax = vBottomRight.x;
+            float fYmin = 0.0f;
+            float fYmax = vBottomRight.y;
+            olc::vf2d vCurPos = vBoids[iCurBoidIndex].GetPos();
+            olc::vf2d vVec = { 0.0f, 0.0f };
+            float fScalar = 0.4f;
+
+            if (vCurPos.x < fXmin)
+                vVec.x = fScalar;
+            else if (vCurPos.x > fXmax)
+                vVec.x = -fScalar;
+
+            if (vCurPos.y < fYmin)
+                vVec.y = fScalar;
+            else if (vCurPos.y > fYmax)
+                vVec.y = -fScalar;
+
+            return vVec;
+        }
+
+
+        void LimitVel(int iCurBoidIndex)
+        {
+            float fVLim = 10.0f;
+            olc::vf2d vVec;
+            olc::vf2d vCurVel = vBoids[iCurBoidIndex].GetVel();
+
+            if (abs(vCurVel.mag2()) > fVLim)
+                vBoids[iCurBoidIndex].SetVel((vCurVel / abs(vCurVel.mag2())) * fVLim);
+        }
+
+
+        void WrapMap(int iCurBoidIndex)
+        {
+            olc::vf2d vCurPos = vBoids[iCurBoidIndex].GetPos();
+
+            if (vCurPos.x < -0.2f)
+                vBoids[iCurBoidIndex].SetPosX(vBottomRight.x + 0.2f);
+            else if (vCurPos.x > vBottomRight.x + 0.2f)
+                vBoids[iCurBoidIndex].SetPosX(-0.2f);
+
+            if (vCurPos.y < -0.2f)
+                vBoids[iCurBoidIndex].SetPosY(vBottomRight.x + 0.2f);
+            else if (vCurPos.y > vBottomRight.y + 0.2f)
+                vBoids[iCurBoidIndex].SetPosY(-0.2f);
         }
 
 
         void RenderBoids()
         {
             Clear(olc::VERY_DARK_BLUE);
-            tv.DrawRect({ 0.0f, 0.0f }, { 1.0f, 1.0f }, olc::RED);
-            tv.DrawRect({ vBottomRight.x - 1.0f, vBottomRight.y - 1.0f }, { 1.0f, 1.0f }, olc::RED);
             for (int i = 0; i < vBoids.size(); i++)
             {
                 vBoids[i].DrawSelf(this, &tv);
