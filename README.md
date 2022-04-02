@@ -7,4 +7,4 @@ It is written in C++ using the olcPixelGameEngine by Javidx9.
 
 ## Technology used
 - C++
-- olcPixelGameEngine by Javidx9
+- [olcPixelGameEngine](https://github.com/OneLoneCoder/olcPixelGameEngine) by [Javidx9](https://github.com/OneLoneCoder)
