@@ -3,6 +3,7 @@
 #include "olcPixelGameEngine.h"
 #include "olcPGEX_TransformedView.h"
 #include "Boid.h"
+#include "Slider.h"
 
 
 class Boids : public olc::PixelGameEngine
@@ -24,6 +25,8 @@ class Boids : public olc::PixelGameEngine
         bool bBounds = true;
         bool bFollowPerchedBoids = true;
 
+        Slider cBoidCountSlider;
+
     public:
         bool OnUserCreate() override
         {
@@ -31,6 +34,8 @@ class Boids : public olc::PixelGameEngine
             tv = olc::TileTransformedView({ ScreenWidth(), ScreenHeight() }, { 32, 32});
             vBottomRight = tv.GetBottomRightTile();
             vCenterScreen = { vBottomRight.x / 2, vBottomRight.y / 2 };
+
+            cBoidCountSlider = Slider(vCenterScreen, { 20.0f, 100.0f });
             for (int i = 0; i < 100; i++)
             {
                 float rX = procgen::normRand();
@@ -44,12 +49,23 @@ class Boids : public olc::PixelGameEngine
 
         bool OnUserUpdate(float fElapsedTime) override
         {
+            HandleInput();
             UpdateBoids();
-            RenderBoids();
+            Render();
 
             iGameTick++;
 
             return true;
+        }
+
+
+        void HandleInput()
+        {
+            if (GetMouse(2).bPressed) tv.StartPan(GetMousePos());
+            if (GetMouse(2).bHeld) tv.UpdatePan(GetMousePos());
+            if (GetMouse(2).bReleased) tv.EndPan(GetMousePos());
+            if (GetMouseWheel() > 0) tv.ZoomAtScreenPos(2.0f, GetMousePos());
+            if (GetMouseWheel() < 0) tv.ZoomAtScreenPos(0.5f, GetMousePos());
         }
 
 
@@ -232,6 +248,19 @@ class Boids : public olc::PixelGameEngine
                 vBoids[iCurBoidIndex].SetPosY(vBottomRight.x + 0.2f);
             else if (vCurPos.y > vBottomRight.y + 0.2f)
                 vBoids[iCurBoidIndex].SetPosY(-0.2f);
+        }
+
+
+        void Render()
+        {
+            RenderUI();
+            RenderBoids();
+        }
+
+
+        void RenderUI()
+        {
+            cBoidCountSlider.DrawSelf(this);
         }
 
 
