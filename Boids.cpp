@@ -22,6 +22,7 @@ class Boids : public olc::PixelGameEngine
         float fScalar = 0.7;
         float fMinDis = 1.0;
         bool bBounds = true;
+        bool bFollowPerchedBoids = true;
 
     public:
         bool OnUserCreate() override
@@ -107,7 +108,7 @@ class Boids : public olc::PixelGameEngine
 
             for (int i = 0; i < vBoids.size(); i++)
             {
-                if (i != iCurBoidIndex)
+                if (i != iCurBoidIndex && (!vBoids[i].bPerching) || bFollowPerchedBoids)
                     vCenterMass += vBoids[i].GetPos();
             }
 
@@ -123,7 +124,7 @@ class Boids : public olc::PixelGameEngine
 
             for (int i = 0; i < vBoids.size(); i++)
             {
-                if (i != iCurBoidIndex)
+                if (i != iCurBoidIndex && (!vBoids[i].bPerching) || bFollowPerchedBoids)
                     if (abs((vBoids[i].GetPos() - vBoids[iCurBoidIndex].GetPos()).mag2()) < fMinDis)
                         vDeltaPos = vDeltaPos - (vBoids[i].GetPos() - vBoids[iCurBoidIndex].GetPos());
             }
@@ -138,7 +139,7 @@ class Boids : public olc::PixelGameEngine
 
             for (int i = 0; i < vBoids.size(); i++)
             {
-                if (i != iCurBoidIndex)
+                if (i != iCurBoidIndex && (!vBoids[i].bPerching) || bFollowPerchedBoids)
                     vPerceivedVel += vBoids[i].GetVel();
             }
 

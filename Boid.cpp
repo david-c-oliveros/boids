@@ -3,7 +3,7 @@
 
 Boid::Boid(olc::vf2d vPos, olc::vf2d vVel)
     : Entity(vPos, vVel), bPerching(false),
-      cPerchTimer(Counter(25))
+      cPerchTimer(Counter(20))
 {
 }
 
