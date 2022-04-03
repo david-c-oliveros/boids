@@ -10,7 +10,9 @@ class Boid : public Entity
         ~Boid();
 
         bool bPerching;
+        bool bPerchCoolDown;
         Counter cPerchTimer;
+        Counter cPerchCoolDownTimer;
 
         void SetPosX(float fPosX);
         void SetPosY(float fPosX);

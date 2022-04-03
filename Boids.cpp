@@ -62,9 +62,19 @@ class Boids : public olc::PixelGameEngine
         {
             olc::vf2d v1, v2, v3, v4, v5, v6;
 
-            std::cout << vBoids[0].GetPos() << std::endl;
             for (int i = 0; i < vBoids.size(); i++)
             {
+                /***************************************/
+                /*        Perch Cool Down Timer        */
+                /***************************************/
+                if (!vBoids[i].cPerchCoolDownTimer.Check())
+                    vBoids[i].cPerchCoolDownTimer.Update();
+                else
+                {
+                    vBoids[i].bPerchCoolDown = false;
+                    vBoids[i].cPerchCoolDownTimer.Reset();
+                }
+
                 /***********************************/
                 /*        Check if perching        */
                 /***********************************/
@@ -78,6 +88,8 @@ class Boids : public olc::PixelGameEngine
                     else
                     {
                         vBoids[i].bPerching = false;
+                        vBoids[i].bPerchCoolDown = true;
+                        vBoids[i].cPerchCoolDownTimer.Start();
                         vBoids[i].cPerchTimer.Reset();
                     }
                 }
@@ -172,11 +184,14 @@ class Boids : public olc::PixelGameEngine
             olc::vf2d vVec = { 0.0f, 0.0f };
             float fScalar = 0.4f;
 
-            if (vCurPos.y > fGroundLevel)
+            if (!vBoids[iCurBoidIndex].bPerchCoolDown)
             {
-                vBoids[iCurBoidIndex].SetPosY(fGroundLevel - 0.3f);
-                vBoids[iCurBoidIndex].bPerching = true;
-                vBoids[iCurBoidIndex].cPerchTimer.Start();
+                if (vCurPos.y > fGroundLevel)
+                {
+                    vBoids[iCurBoidIndex].SetPosY(fGroundLevel - 0.3f);
+                    vBoids[iCurBoidIndex].bPerching = true;
+                    vBoids[iCurBoidIndex].cPerchTimer.Start();
+                }
             }
 
             if (vCurPos.x < fXmin)

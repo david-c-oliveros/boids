@@ -2,8 +2,8 @@
 
 
 Boid::Boid(olc::vf2d vPos, olc::vf2d vVel)
-    : Entity(vPos, vVel), bPerching(false),
-      cPerchTimer(Counter(20))
+    : Entity(vPos, vVel), bPerching(false), bPerchCoolDown(false),
+      cPerchTimer(Counter(40)), cPerchCoolDownTimer(Counter(20))
 {
 }
 
