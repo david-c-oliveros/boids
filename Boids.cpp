@@ -24,6 +24,7 @@ class Boids : public olc::PixelGameEngine
         float fMinDis = 1.0;
         bool bBounds = true;
         bool bFollowPerchedBoids = true;
+        bool bFollowCursor = false;
 
         Slider cBoidCountSlider;
 
@@ -61,6 +62,7 @@ class Boids : public olc::PixelGameEngine
 
         void HandleInput()
         {
+            if (GetKey(olc::Key::M).bReleased) bFollowCursor = !bFollowCursor;
             if (GetMouse(2).bPressed) tv.StartPan(GetMousePos());
             if (GetMouse(2).bHeld) tv.UpdatePan(GetMousePos());
             if (GetMouse(2).bReleased) tv.EndPan(GetMousePos());
@@ -113,14 +115,22 @@ class Boids : public olc::PixelGameEngine
                 if (!bBounds)
                     WrapMap(i);
 
+                olc::vf2d vCursorCoords = tv.ScreenToWorld(GetMousePos());
                 v1 = Rule1(i);
                 v2 = Rule2(i);
                 v3 = Rule3(i);
                 v4 = BoundPos(i);
                 v5 = StrongWind();
-                v6 = TendToPlace(i, vCenterScreen);
+                //v6 = bFollowCursor ? TendToPlace(i, vCursorCoords) : { 0.0f, 0.0f };
 
-                vBoids[i].SetVel(vBoids[i].GetVel() + v1 + v2 + v3 + v4);
+                if (bFollowCursor)
+                    v6 = TendToPlace(i, vCursorCoords);
+                else
+                    v6 = { 0.0f, 0.0f };
+
+                std::cout << vCursorCoords << std::endl;
+
+                vBoids[i].SetVel(vBoids[i].GetVel() + v1 + v2 + v3 + v4 + v6);
                 LimitVel(i);
                 vBoids[i].SetPos(vBoids[i].GetPos() + 0.1f * vBoids[i].GetVel());
             }
@@ -185,7 +195,7 @@ class Boids : public olc::PixelGameEngine
 
         olc::vf2d TendToPlace(int iCurBoidIndex, olc::vf2d vPlace = { 1.0f, 1.0f })
         {
-            return (vPlace - vBoids[iCurBoidIndex].GetPos()) / 80;
+            return (vPlace - vBoids[iCurBoidIndex].GetPos()) / 40;
         }
 
 
@@ -260,6 +270,8 @@ class Boids : public olc::PixelGameEngine
 
         void RenderUI()
         {
+            if (bFollowCursor)
+                DrawStringDecal({ (ScreenWidth() / 2) - 64.0f, 20.0f }, "Following cursor");
             cBoidCountSlider.DrawSelf(this);
         }
 
