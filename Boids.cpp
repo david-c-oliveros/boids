@@ -4,6 +4,7 @@
 #include "olcPGEX_TransformedView.h"
 #include "Boid.h"
 #include "Slider.h"
+#include "Counter.h"
 
 
 class Boids : public olc::PixelGameEngine
@@ -25,7 +26,9 @@ class Boids : public olc::PixelGameEngine
         bool bBounds = true;
         bool bFollowPerchedBoids = true;
         bool bFollowCursor = false;
+        bool bScatter = false;
 
+        Counter cScatterTimer = Counter(50);
         Slider cBoidCountSlider;
 
     public:
@@ -62,6 +65,12 @@ class Boids : public olc::PixelGameEngine
 
         void HandleInput()
         {
+            if (GetKey(olc::Key::S).bReleased)
+            {
+                std::cout << "Scatter" << std::endl;
+                bScatter = true;
+                cScatterTimer.Start();
+            }
             if (GetKey(olc::Key::M).bReleased) bFollowCursor = !bFollowCursor;
             if (GetMouse(2).bPressed) tv.StartPan(GetMousePos());
             if (GetMouse(2).bHeld) tv.UpdatePan(GetMousePos());
@@ -79,6 +88,25 @@ class Boids : public olc::PixelGameEngine
         void UpdateBoids()
         {
             olc::vf2d v1, v2, v3, v4, v5, v6;
+            float fScalarV1 = 1.0f;
+            float fScalarV2 = 1.0f;
+            float fScalarV3 = 1.0f;
+            float fScalarV6 = 1.0f;
+
+            if (bScatter)
+            {
+                if (cScatterTimer.Check())
+                {
+                    bScatter = false;
+                    cScatterTimer.Reset();
+                }
+                cScatterTimer.Update();
+                bFollowCursor = false;
+            }
+
+            fScalarV1 = bScatter ? 0.0f : 1.0f;
+            fScalarV6 = bFollowCursor ? 1.0f : 0.0f;
+            fScalarV6 = bScatter ? -3.0f : 0.0f;
 
             for (int i = 0; i < vBoids.size(); i++)
             {
@@ -116,19 +144,12 @@ class Boids : public olc::PixelGameEngine
                     WrapMap(i);
 
                 olc::vf2d vCursorCoords = tv.ScreenToWorld(GetMousePos());
-                v1 = Rule1(i);
-                v2 = Rule2(i);
-                v3 = Rule3(i);
+                v1 = fScalarV1 * Rule1(i);
+                v2 = fScalarV2 * Rule2(i);
+                v3 = fScalarV3 * Rule3(i);
                 v4 = BoundPos(i);
                 v5 = StrongWind();
-                //v6 = bFollowCursor ? TendToPlace(i, vCursorCoords) : { 0.0f, 0.0f };
-
-                if (bFollowCursor)
-                    v6 = TendToPlace(i, vCursorCoords);
-                else
-                    v6 = { 0.0f, 0.0f };
-
-                std::cout << vCursorCoords << std::endl;
+                v6 = fScalarV6 * TendToPlace(i, CenterOfMass(false));
 
                 vBoids[i].SetVel(vBoids[i].GetVel() + v1 + v2 + v3 + v4 + v6);
                 LimitVel(i);
@@ -142,16 +163,7 @@ class Boids : public olc::PixelGameEngine
         /********************************************/
         olc::vf2d Rule1(int iCurBoidIndex)
         {
-            olc::vf2d vCenterMass = { 0.0f, 0.0f };
-
-            for (int i = 0; i < vBoids.size(); i++)
-            {
-                if (i != iCurBoidIndex && (!vBoids[i].bPerching) || bFollowPerchedBoids)
-                    vCenterMass += vBoids[i].GetPos();
-            }
-
-            vCenterMass /= (vBoids.size() - 1);
-
+            olc::vf2d vCenterMass = CenterOfMass(true, iCurBoidIndex);
             return (vCenterMass - vBoids[iCurBoidIndex].GetPos()) / 40;
         }
 
@@ -184,6 +196,27 @@ class Boids : public olc::PixelGameEngine
             vPerceivedVel /= (vBoids.size() - 1);
 
             return (vPerceivedVel - vBoids[iCurBoidIndex].GetVel()) / 16;
+        }
+
+
+        olc::vf2d CenterOfMass(bool bExclude, int iExcludeIndex = NULL)
+        {
+            olc::vf2d vCenterMass = { 0.0f, 0.0f };
+
+            for (int i = 0; i < vBoids.size(); i++)
+            {
+                if (bExclude)
+                {
+                    if (i != iExcludeIndex && (!vBoids[i].bPerching) || bFollowPerchedBoids)
+                        vCenterMass += vBoids[i].GetPos();
+                }
+                else
+                {
+                    vCenterMass += vBoids[i].GetPos();
+                }
+            }
+
+            return vCenterMass /= (vBoids.size() - 1);
         }
 
 
@@ -270,6 +303,9 @@ class Boids : public olc::PixelGameEngine
 
         void RenderUI()
         {
+            if (bScatter)
+                DrawStringDecal({ (ScreenWidth() / 2) - 64.0f, 40.0f }, "Scatter");
+
             if (bFollowCursor)
                 DrawStringDecal({ (ScreenWidth() / 2) - 64.0f, 20.0f }, "Following cursor");
             cBoidCountSlider.DrawSelf(this);
